@@ -1,24 +1,26 @@
 package com.library.service;
 
 import com.library.dto.ReaderDTO;
+import com.library.exception.DuplicateResourceException;
+import com.library.exception.ResourceNotFoundException;
 import com.library.model.Reader;
 import com.library.repository.ReaderRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ReaderService {
 
-    @Autowired
-    private ReaderRepository readerRepository;
+    private final ReaderRepository readerRepository;
 
     @Transactional
     public ReaderDTO createReader(ReaderDTO readerDTO) {
         if (readerRepository.existsByEmail(readerDTO.getEmail())) {
-            throw new RuntimeException("Reader with email " + readerDTO.getEmail() + " already exists");
+            throw new DuplicateResourceException("Reader with email " + readerDTO.getEmail() + " already exists");
         }
 
         Reader reader = convertToEntity(readerDTO);
@@ -28,8 +30,7 @@ public class ReaderService {
 
     @Transactional
     public ReaderDTO updateReader(Long id, ReaderDTO readerDTO) {
-        Reader reader = readerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Reader not found with id: " + id));
+        Reader reader = findReaderById(id);
 
         reader.setFirstName(readerDTO.getFirstName());
         reader.setLastName(readerDTO.getLastName());
@@ -43,14 +44,12 @@ public class ReaderService {
 
     @Transactional
     public void deleteReader(Long id) {
-        Reader reader = readerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Reader not found with id: " + id));
+        Reader reader = findReaderById(id);
         readerRepository.delete(reader);
     }
 
     public ReaderDTO getReaderById(Long id) {
-        Reader reader = readerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Reader not found with id: " + id));
+        Reader reader = findReaderById(id);
         return convertToDTO(reader);
     }
 
@@ -62,8 +61,13 @@ public class ReaderService {
 
     public ReaderDTO getReaderByEmail(String email) {
         Reader reader = readerRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Reader not found with email: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("Reader not found with email: " + email));
         return convertToDTO(reader);
+    }
+
+    private Reader findReaderById(Long id) {
+        return readerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Reader not found with id: " + id));
     }
 
     private Reader convertToEntity(ReaderDTO dto) {

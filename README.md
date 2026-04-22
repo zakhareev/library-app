@@ -1,48 +1,38 @@
-## Архитектура
-- Веб-приложение: Java 21, Spring Boot 4.0.3
-- База данных: PostgreSQL 15
-- Контейнеризация: Docker, Docker Compose
-- Сборка: Maven
+## Настройка репозитория
+### 1. Необходимые секреты
 
-## Функциональность
+`DOCKER_HUB_USERNAME:` Ваше имя пользователя на Docker Hub
 
-### Управление книгами
-- Создание, просмотр, обновление и удаление книг
-- Поиск книг по названию, автору и жанру
-- Просмотр доступных книг
-- Отслеживание статуса (доступна/выдана)
+`DOCKER_HUB_TOKEN:` Токен доступа к Docker Hub
 
-### Управление читателями
-- Регистрация новых читателей
-- Просмотр и обновление данных читателей
-- Поиск по email
-- Удаление читателей
+### 2. Добавление секретов в GitHub
 
-### Учет выдачи книг
-- Выдача книг читателям
-- Возврат книг
-- Отслеживание активных выдач
-- Контроль просроченных выдач
-- История выдач по читателю
+1. Перейдите на страницу вашего репозитория на GitHub.
+2. Откройте **Settings** - **Secrets and variables** - **Actions**.
+3. Нажмите кнопку **New repository secret**.
+4. Добавьте каждый секрет по отдельности, указав имя и значение.
 
-## Запуск проекта
-1. Клонировать репозиторий
-   ```bash
-   git clone https://github.com/zakhareev/library-app.git
-   cd library-app
-2. Создать файл .env
-   ```.env
-   DB_USER=user_123
-   DB_PASSWORD=password_123
-   DB_NAME=librarydb
-   DB_PORT=5432
-   APP_PORT=8080
-   APP_NAME=library-app
-   NETWORK_NAME=library-network
-3. Запустить контейнеры
-   ```bash
-    docker-compose up --build
-4. Проверить работу
-   ```bash
-    curl http://localhost:8080/api/books
+### 3. Получение токена Docker Hub
 
+1. **Зайдите на Docker Hub:** https://hub.docker.com/
+2. **Перейдите в настройки аккаунта:** Нажмите на аватар - **Account Settings**
+3. **Выберите раздел Settings:** В левом меню выберите **Personal access tokens**
+4. **Создайте новый токен:** Нажмите **Generate new token**
+
+5. **Настройте токен:**
+   - **Access token:** `github-actions`
+   - **Access permissions:** Выберите **Read & Write**
+
+6. **Скопируйте токен**: Нажмите **Generate** и скопируйте сгенерированный токен.
+
+### 4. Добавление секретов в GitHub
+
+1. В репозитории перейдите в **Settings** - **Secrets and variables** - **Actions**
+2. Нажмите  **New repository secret:**
+3. Добавьте два секрета:
+   - **Первый секрет**:
+   - Name: `DOCKER_HUB_USERNAME`
+   - Value: (ваше имя пользователя Docker Hub)
+   - **Второй  секрет**:
+   - Name: `DOCKER_HUB_TOKEN`
+   - Value: (скопированный токен)

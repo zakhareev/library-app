@@ -1,19 +1,20 @@
 package com.library.service;
 
 import com.library.dto.BookDTO;
+import com.library.exception.ResourceNotFoundException;
 import com.library.model.Book;
 import com.library.repository.BookRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class BookService {
 
-    @Autowired
-    private BookRepository bookRepository;
+    private final BookRepository bookRepository;
 
     @Transactional
     public BookDTO createBook(BookDTO bookDTO) {
@@ -24,8 +25,7 @@ public class BookService {
 
     @Transactional
     public BookDTO updateBook(Long id, BookDTO bookDTO) {
-        Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Book not found with id: " + id));
+        Book book = findBookById(id);
 
         book.setTitle(bookDTO.getTitle());
         book.setAuthor(bookDTO.getAuthor());
@@ -39,14 +39,12 @@ public class BookService {
 
     @Transactional
     public void deleteBook(Long id) {
-        Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Book not found with id: " + id));
+        Book book = findBookById(id);
         bookRepository.delete(book);
     }
 
     public BookDTO getBookById(Long id) {
-        Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Book not found with id: " + id));
+        Book book = findBookById(id);
         return convertToDTO(book);
     }
 
@@ -66,6 +64,11 @@ public class BookService {
         return bookRepository.findByAvailableTrue().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+    }
+
+    private Book findBookById(Long id) {
+        return bookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + id));
     }
 
     private Book convertToEntity(BookDTO dto) {
