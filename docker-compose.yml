@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  db:
+    build: ./db
+    container_name: ${APP_NAME:-library-app}-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ${NETWORK_NAME}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "${DB_PORT}:5432"
+
+  app:
+    build: .
+    container_name: ${APP_NAME}-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${APP_PORT}:8080"
+    networks:
+      - ${NETWORK_NAME}
+
+networks:
+  library-network:
+    name: ${NETWORK_NAME}
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: ${APP_NAME}-postgres-data
