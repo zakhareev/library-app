@@ -1,13 +1,15 @@
 package com.library.service;
 
 import com.library.dto.LoanDTO;
+import com.library.exception.BookNotAvailableException;
+import com.library.exception.ResourceNotFoundException;
 import com.library.model.Book;
 import com.library.model.Loan;
 import com.library.model.Reader;
 import com.library.repository.BookRepository;
 import com.library.repository.LoanRepository;
 import com.library.repository.ReaderRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
@@ -15,31 +17,24 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class LoanService {
 
-    @Autowired
-    private LoanRepository loanRepository;
-
-    @Autowired
-    private BookRepository bookRepository;
-
-    @Autowired
-    private ReaderRepository readerRepository;
+    private final LoanRepository loanRepository;
+    private final BookRepository bookRepository;
+    private final ReaderRepository readerRepository;
 
     @Transactional
     public LoanDTO createLoan(LoanDTO loanDTO) {
-        Book book = bookRepository.findById(loanDTO.getBookId())
-                .orElseThrow(() -> new RuntimeException("Book not found with id: " + loanDTO.getBookId()));
-
-        Reader reader = readerRepository.findById(loanDTO.getReaderId())
-                .orElseThrow(() -> new RuntimeException("Reader not found with id: " + loanDTO.getReaderId()));
+        Book book = findBookById(loanDTO.getBookId());
+        Reader reader = findReaderById(loanDTO.getReaderId());
 
         if (!book.getAvailable()) {
-            throw new RuntimeException("Book is not available for loan");
+            throw new BookNotAvailableException("Book is not available for loan");
         }
 
         if (loanRepository.existsByBookIdAndStatus(book.getId(), "ACTIVE")) {
-            throw new RuntimeException("Book is already on loan");
+            throw new BookNotAvailableException("Book is already on loan");
         }
 
         book.setAvailable(false);
@@ -57,11 +52,10 @@ public class LoanService {
 
     @Transactional
     public LoanDTO returnBook(Long id) {
-        Loan loan = loanRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Loan not found with id: " + id));
+        Loan loan = findLoanById(id);
 
         if (!"ACTIVE".equals(loan.getStatus())) {
-            throw new RuntimeException("Loan is not active");
+            throw new IllegalStateException("Loan is not active");
         }
 
         loan.setReturnDate(LocalDateTime.now());
@@ -76,6 +70,7 @@ public class LoanService {
     }
 
     public List<LoanDTO> getLoansByReader(Long readerId) {
+        findReaderById(readerId);
         return loanRepository.findByReaderId(readerId).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -94,9 +89,23 @@ public class LoanService {
     }
 
     public LoanDTO getLoanById(Long id) {
-        Loan loan = loanRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Loan not found with id: " + id));
+        Loan loan = findLoanById(id);
         return convertToDTO(loan);
+    }
+
+    private Book findBookById(Long id) {
+        return bookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + id));
+    }
+
+    private Reader findReaderById(Long id) {
+        return readerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Reader not found with id: " + id));
+    }
+
+    private Loan findLoanById(Long id) {
+        return loanRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Loan not found with id: " + id));
     }
 
     private LoanDTO convertToDTO(Loan loan) {
